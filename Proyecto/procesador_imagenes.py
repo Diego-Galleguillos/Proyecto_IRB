@@ -121,7 +121,7 @@ def encuentra_centro(thresh):
     return cX, cY
 
 # Dibuja y detecta centro objeto 
-def centro_color(Solo_color):
+def centro_color(Solo_color, color_centro):
     ## Convertir a escala de gris
     gray_image = cv2.cvtColor(Solo_color, cv2.COLOR_BGR2GRAY)
     # Convertir a imagen binaria
@@ -129,8 +129,25 @@ def centro_color(Solo_color):
     # Busca centro
     cX, cY = encuentra_centro(thresh)
     # Dibuja circulo
-    cv2.circle(solo_color, (cX, cY), 5, COLOR_CENTRO, -1)
+    cv2.circle(solo_color, (cX, cY), 5, color_centro, -1)
     return [cX,cY]
+
+# MODOS FALSOS
+def modos_falsos():
+    global ir_centro, ir_pelota, ir_arco_nuesto, ir_arco_opuesto
+    global ir_a_tapar, retroceder, modo_stop, linea_recta, pegar_pelota
+
+    ir_centro = False
+    ir_pelota =  False
+    ir_arco_nuesto = False
+    ir_arco_opuesto = False
+    ir_a_tapar = False
+    retroceder = False
+    modo_stop = False
+    linea_recta = False
+    pegar_pelota = False
+    
+    pass
 ##################################################
 #              DEFINIMOS PARAMETROS              #
 ##################################################
@@ -147,8 +164,14 @@ NCAM = 1 # Camara a utilizar
 HZ_CAMARA = 1 # 1 = 50hz y 2 = 60 hz
 
 # COLORES
+COLOR_CENTRO_PELOTA = (255, 255, 255)
+COLOR_CENTRO_ROBOT = (68, 104, 248)
+COLOR_CENTRO_ENEMIGO = (255, 147, 123)
+COLOR_CENTRO_ARCO_1 = (166, 222, 244)
+COLOR_CENTRO_ARCO_2 = (251, 61, 14)
 COLOR_CENTRO = (255, 255, 255)
-COLOR_LINEA_C1_C2 = (255, 255, 255)
+
+COLOR_LINEA_C1_C2 = (68, 104, 248)
 COLOR_LINEA_C1_C3 = (255, 255, 255)
 COLOR_LETRA_ANGULO = (220, 190, 180)
 COLOR_LETRA_MODO = (220, 190, 180)
@@ -157,7 +180,7 @@ COLOR_LETRA_DIST = (220, 190, 180)
 # TAMAÑOS
 TAMANO_LETRA_ANGULO = 0.7
 GROSOR_LETRA_ANGULO = 1
-GROSOR_LINEA_CENTROS = 3
+GROSOR_LINEA_CENTROS = 2
 
 TAMANO_LETRA_MODO = 0.7
 TAMANO_LETRA_DIST = 0.7 
@@ -195,6 +218,7 @@ pos_arco_1 = np.array([0,0])
 pos_arco_2 = np.array([0,0])
 pos_centro = np.array([0,0])
 pos_interceptar = np.array([0,0])
+pos_inicio_tiro = np.array([0,0])
 
 ## Vectores creados para el mouse_event() ##
 color1_hsv = np.array([0,0,0])
@@ -218,6 +242,18 @@ IR_A_TAPAR = False
 RETROCEDER = False
 MODO_STOP = False
 LINEA_RECTA = False
+PEGAR_PELOTA = False
+
+
+ir_centro = True
+ir_pelota = False
+ir_arco_nuesto = False
+ir_arco_opuesto = False
+ir_a_tapar = False
+retroceder = False
+modo_stop = False
+linea_recta = False
+pegar_pelota = False
 
 
 # MODOS 
@@ -283,21 +319,21 @@ while(True):
         Solo_color_5 = cv2.bitwise_and(frame, frame, mask= color_5)
         Solo_color_4 = cv2.bitwise_and(frame, frame, mask= color_4)
         # Detectar y dubuja centro colores
-        c_color_5 = centro_color(Solo_color_5)
-        c_color_4 = centro_color(Solo_color_4)
+        c_color_5 = centro_color(Solo_color_5, COLOR_CENTRO_ENEMIGO)
+        c_color_4 = centro_color(Solo_color_4, COLOR_CENTRO_ENEMIGO)
         # Pasa Centro a a array
         v_c_5 = np.array(c_color_5)
         v_c_4 = np.array(c_color_4)
     
     # Detectar y dubuja centro colores
-    c_color_3 = centro_color(Solo_color_3)
-    c_color_2 = centro_color(Solo_color_2)
-    c_color_1 = centro_color(Solo_color_1)
+    c_color_3 = centro_color(Solo_color_3, COLOR_CENTRO_PELOTA)
+    c_color_2 = centro_color(Solo_color_2, COLOR_CENTRO_ROBOT)
+    c_color_1 = centro_color(Solo_color_1, COLOR_CENTRO_ROBOT)
     
     #dibuja centro de cancha y arcos
-    cv2.circle(solo_color, pos_centro, 8, COLOR_CENTRO, -1)
-    cv2.circle(solo_color, pos_arco_1, 8, COLOR_CENTRO, -1)
-    cv2.circle(solo_color, pos_arco_2, 8, COLOR_CENTRO, -1)
+    cv2.circle(solo_color, pos_centro, 2, COLOR_CENTRO, -1)
+    cv2.circle(solo_color, pos_arco_1, 8, COLOR_CENTRO_ARCO_1, -1)
+    cv2.circle(solo_color, pos_arco_2, 8, COLOR_CENTRO_ARCO_2, -1)
 
     # Pasa Centro a a array
     v_c_3 = np.array(c_color_3)
@@ -308,9 +344,20 @@ while(True):
     pos_interceptar = v_c_3/2 + pos_arco_1/2
     pos_interceptar = np.array([int(pos_interceptar[0]), int(pos_interceptar[1])])
 
+    #Calcula posicion para pegar
+    pos_inicio_tiro = v_c_3 + 65*(v_c_3 - pos_arco_2)/np.linalg.norm((v_c_3 - pos_arco_2))
+    pos_inicio_tiro = np.array([int(pos_inicio_tiro[0]), int(pos_inicio_tiro[1])])
+
+    
     # Calcula angulo y vector entre B y C
     if IR_PELOTA:
         alpha, d = angulo(v_c_2, v_c_3, v_c_1)
+        if MODO_ANTERIOR == "PEGARLE A LA PELOTA":
+            if abs(alpha) <= 15 and np.linalg.norm(d/4.3) < 15:
+                PEGAR_PELOTA = False
+                IR_PELOTA = False
+                MODO_ANTERIOR = "IR A LA PELOTA"
+                IR_ARCO_OPUESTO = True
     elif IR_CENTRO:
         alpha, d = angulo(v_c_2, pos_centro, v_c_1)
     elif IR_ARCO_NUESTRO:
@@ -320,7 +367,13 @@ while(True):
     elif IR_A_TAPAR:
         alpha, d = angulo(v_c_2, pos_interceptar, v_c_1)
         cv2.circle(solo_color, pos_interceptar, 8, COLOR_CENTRO, -1)
-
+    elif PEGAR_PELOTA:
+        alpha, d = angulo(v_c_2, pos_inicio_tiro, v_c_1)
+        cv2.circle(solo_color, pos_inicio_tiro, 10, (255, 255, 0), -1)
+        if np.linalg.norm(d/4.3) < 15:
+            PEGAR_PELOTA = False
+            IR_PELOTA = True
+            MODO_ANTERIOR = "PEGARLE A LA PELOTA"
    
     ## Dibuja linea entre centros
 
@@ -440,7 +493,7 @@ while(True):
         IR_A_TAPAR = False
         LINEA_RECTA = False
 
-    elif tecla & 0xFF == ord('t'):
+    elif tecla & 0xFF == ord('t'): #tapar el arco
         IR_CENTRO = False
         IR_PELOTA = False
         IR_ARCO_NUESTRO = False
@@ -460,6 +513,19 @@ while(True):
         IR_A_TAPAR = False
         LINEA_RECTA = True
         MODO_ACTUAL = "LINEA RECTA"
+    
+    elif tecla & 0xFF == ord('q'): #Posicionas, y pegar a la pelota 
+
+        IR_CENTRO = False
+        IR_PELOTA = False
+        IR_ARCO_NUESTRO = False
+        IR_ARCO_OPUESTO = False
+        MODO_STOP = False
+        IR_A_TAPAR = False
+        LINEA_RECTA = False
+        PEGAR_PELOTA = True
+        MODO_ACTUAL = "PEGARLE A LA PELOTA"
+   
    
 
     # Mandar informacion arduino
@@ -504,9 +570,12 @@ while(True):
                 MODO_ACCION = True
             elif IR_ARCO_OPUESTO:
                 MODO_ACCION = True
+            elif PEGAR_PELOTA:
+                MODO_ACCION = True
 
     
 
 com_serial.distancia = 0
+com_serial.angulo = 0
 cap.release()
 cv2.destroyAllWindows()

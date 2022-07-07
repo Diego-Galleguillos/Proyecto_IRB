@@ -24,8 +24,8 @@ from comunicador_serial import Comunicacion_serial
 def imprime_color_elegido(color_sel, x, y, nr):
     print("Color", str(nr) +  ": ", color_sel )
     print("Eje x: ", x)
-    print("Eje y: ",y)
-
+    print("Eje y: ", y)
+ 
 # devuelve color seleccionado (e imprime)
 def color_seleccionado(hsv_frame, x, y, nr):
     color_sel = hsv_frame[y,x]
@@ -55,23 +55,19 @@ def _mouseEvent(event, x, y, flags, param):
         elif(nClick == 3):
             color_sel_3 = color_seleccionado(hsv_frame, x, y, nClick)
             nClick += 1
-            if not(COLORES6):
+            if not(COLORES5):
                 Listo = True
-        
-        elif(nClick == 4 and COLORES6):
+
+        elif(nClick == 4 and COLORES5):
             color_sel_4 = color_seleccionado(hsv_frame, x, y, nClick)
             nClick += 1
 
-        elif(nClick == 5 and COLORES6):
+        elif(nClick == 5 and COLORES5):
             color_sel_5 = color_seleccionado(hsv_frame, x, y, nClick)
-            nClick += 1
-
-        elif(nClick == 6 and COLORES6):
-            color_sel_6 = color_seleccionado(hsv_frame, x, y, nClick)
             nClick += 1
             Listo = True
 
-        elif(nClick == 4 or nClick == 7):
+        elif(nClick == 4 or nClick == 6):
             print("PROXIMO CLICK REINICIA COLORES")
             nClick += 1
 
@@ -80,18 +76,18 @@ def _mouseEvent(event, x, y, flags, param):
             nClick= 1
 
     if event == cv2.EVENT_RBUTTONDOWN:
-        print("click derecho")
 
         if nClick_2 == 1:
             nClick_2 += 1
+            print("Se selcciono arco 1")
             pos_arco_1 = np.array([x, y])
         elif nClick_2 == 2:
             nClick_2 += 1
+            print("Se selcciono arco 1")
             pos_arco_2 = np.array([x, y])
         if nClick_2 == 3:
             nClick_2 = 1
-        retroceder = True
-        print("RETROCEDER")
+            print("SIGUIENTE CLICK DERECHO SELECCIONA ARCO")
     """
     if event == cv2.EVENT_:
         escojer_arco = True
@@ -139,7 +135,7 @@ def centro_color(Solo_color):
 #              DEFINIMOS PARAMETROS              #
 ##################################################
 
-COM = "COM5"
+COM = "COM9 "
 BANDRATE = 38400 
 
 # Nombres
@@ -155,6 +151,8 @@ COLOR_CENTRO = (255, 255, 255)
 COLOR_LINEA_C1_C2 = (255, 255, 255)
 COLOR_LINEA_C1_C3 = (255, 255, 255)
 COLOR_LETRA_ANGULO = (220, 190, 180)
+COLOR_LETRA_MODO = (220, 190, 180)
+COLOR_LETRA_DIST = (220, 190, 180)
 
 # TAMAÑOS
 TAMANO_LETRA_ANGULO = 0.7
@@ -162,13 +160,16 @@ GROSOR_LETRA_ANGULO = 1
 GROSOR_LINEA_CENTROS = 3
 
 TAMANO_LETRA_MODO = 0.7
+TAMANO_LETRA_DIST = 0.7 
 GROSOR_LETRA_MODO = 1
+GROSOR_LETRA_DIST = 1
 GROSOR_LINEA_MODO = 3
 
 
 # POSICION
-POS_TEXTO_ANGULO = (20, 50)
-POS_TEXTO_MODO = (20, 85)
+POS_TEXTO_ANGULO = (20, 85)
+POS_TEXTO_MODO = (20, 50)
+POS_TEXTO_DIST = (20, 120)
 
 # RANGOS
 RANGO_THRESHOLD_1 = 50
@@ -179,26 +180,14 @@ RANGOS_COLOR = np.array([10, 40, 40])
 
 # Activar
 CONECTAR = True # activar coneccion arduino
-COLORES6 = False # Activar 6 colores
+COLORES5 = False # Activar 6 colores
 
-# Objetivos
-IR_CENTRO = True
-IR_PELOTA = False
-IR_ARCO_NUESTRO = False
-IR_ARCO_OPUESTO = False
-RETROCEDER = False
-MODO_STOP = False
-
-# MODOS 
-MODO_ESPERA = True
-MODO_ACCION = False 
-MODO_ACTUAL = "IR AL CENTRO"
 
 ##################################################
 #              DEFINIMOS VARIABLES               #
 ##################################################
 distancia_inicial = 0
-nClick =  1
+nClick = 1
 nClick_2 = 1
 Listo = False
 restart = True
@@ -218,6 +207,19 @@ color_sel_3 = np.array([0, 0, 0])
 color_sel_4 = np.array([0, 0, 0])
 color_sel_5 = np.array([0, 0, 0])
 color_sel_6 = np.array([0, 0, 0])
+
+# Objetivos
+IR_CENTRO = True
+IR_PELOTA = False
+IR_ARCO_NUESTRO = False
+IR_ARCO_OPUESTO = False
+RETROCEDER = False
+MODO_STOP = False
+
+# MODOS 
+MODO_ESPERA = True
+MODO_ACCION = False 
+MODO_ACTUAL = "IR AL CENTRO"
 
 ##################################################
 #                    Programa                    #
@@ -257,6 +259,10 @@ while(True):
     color_2 = cv2.inRange(imagen_hsv, color_sel_2 - RANGOS_COLOR, color_sel_2 + RANGOS_COLOR)
     color_3 = cv2.inRange(imagen_hsv, color_sel_3 - RANGOS_COLOR, color_sel_3 + RANGOS_COLOR)
     
+    if COLORES5:
+        color_4 = cv2.inRange(imagen_hsv, color_sel_4 - RANGOS_COLOR, color_sel_4 + RANGOS_COLOR)
+        color_5 = cv2.inRange(imagen_hsv, color_sel_5 - RANGOS_COLOR, color_sel_5 + RANGOS_COLOR)
+    
     # Mostrar pestana 1 (a color normal)
     cv2.imshow(WINDOW_NAME_1,frame)
     cv2.setMouseCallback(WINDOW_NAME_1, _mouseEvent)
@@ -267,6 +273,17 @@ while(True):
     Solo_color_2 = cv2.bitwise_and(frame, frame, mask= color_2)
     Solo_color_1 = cv2.bitwise_and(frame, frame, mask= color_1)
 
+    
+    if COLORES5:
+        Solo_color_5 = cv2.bitwise_and(frame, frame, mask= color_5)
+        Solo_color_4 = cv2.bitwise_and(frame, frame, mask= color_4)
+        # Detectar y dubuja centro colores
+        c_color_5 = centro_color(Solo_color_5)
+        c_color_4 = centro_color(Solo_color_4)
+        # Pasa Centro a a array
+        v_c_5 = np.array(c_color_5)
+        v_c_4 = np.array(c_color_4)
+    
     # Detectar y dubuja centro colores
     c_color_3 = centro_color(Solo_color_3)
     c_color_2 = centro_color(Solo_color_2)
@@ -276,9 +293,10 @@ while(True):
     cv2.circle(solo_color, pos_centro, 8, COLOR_CENTRO, -1)
     cv2.circle(solo_color, pos_arco_1, 8, COLOR_CENTRO, -1)
     cv2.circle(solo_color, pos_arco_2, 8, COLOR_CENTRO, -1)
+
     # Pasa Centro a a array
-    v_c_2 = np.array(c_color_2)
     v_c_3 = np.array(c_color_3)
+    v_c_2 = np.array(c_color_2)
     v_c_1 = np.array(c_color_1)
 
     # Calcula angulo y vector entre B y C
@@ -328,7 +346,16 @@ while(True):
         COLOR_LETRA_ANGULO, 
         GROSOR_LETRA_ANGULO, 
         cv2.LINE_AA)
-        
+
+        ## Modo funcion 
+    solo_color = cv2.putText(
+        solo_color, f"Distancia: = {com_serial.distancia}", 
+        POS_TEXTO_DIST, 
+        cv2.FONT_HERSHEY_SIMPLEX, 
+        TAMANO_LETRA_DIST, 
+        COLOR_LETRA_DIST, 
+        GROSOR_LETRA_DIST, 
+        cv2.LINE_AA)
 
     cv2.imshow(WINDOW_NAME_2,solo_color)
     ## Cada 1 frame revisa si hay alguna tecla apretada.
@@ -376,7 +403,7 @@ while(True):
         nClick = 1
         nClick_2 = 1
 
-    elif tecla & 0xFF == ord('s'): #Retroceder
+    elif tecla & 0xFF == ord('s'): # Stop 
         MODO_STOP = True
         MODO_ESPERA = True
         IR_CENTRO = False
@@ -396,14 +423,16 @@ while(True):
                     time.sleep(2)
                     RETROCEDER = False
                     MODO_ACTUAL = MODO_ANTERIOR
+                    
                 elif MODO_STOP:
+
                     com_serial.distancia = 0
                     com_serial.angulo = 0
                     RETROCEDER = False
                     MODO_ACTUAL = "STOP"
                 else:
                     if np.linalg.norm(d) > 8:
-                        com_serial.distancia = int(np.linalg.norm(d/5))
+                        com_serial.distancia = int(np.linalg.norm(d/4.3))
                     else:
                         com_serial.distancia = 0
                     try:

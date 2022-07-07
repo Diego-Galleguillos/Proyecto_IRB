@@ -134,12 +134,12 @@ def centro_color(Solo_color, color_centro):
 
 # MODOS FALSOS
 def modos_falsos():
-    global ir_centro, ir_pelota, ir_arco_nuesto, ir_arco_opuesto
+    global ir_centro, ir_pelota, ir_arco_nuestro, ir_arco_opuesto
     global ir_a_tapar, retroceder, modo_stop, linea_recta, pegar_pelota
 
     ir_centro = False
     ir_pelota =  False
-    ir_arco_nuesto = False
+    ir_arco_nuestro = False
     ir_arco_opuesto = False
     ir_a_tapar = False
     retroceder = False
@@ -203,7 +203,7 @@ RANGOS_COLOR = np.array([10, 40, 30])
 
 # Activar
 CONECTAR = True # activar coneccion arduino
-COLORES5 = False # Activar 6 colores
+COLORES5 = True # Activar 6 colores
 
 
 ##################################################
@@ -234,32 +234,23 @@ color_sel_5 = np.array([0, 0, 0])
 color_sel_6 = np.array([0, 0, 0])
 
 # Objetivos
-IR_CENTRO = True
-IR_PELOTA = False
-IR_ARCO_NUESTRO = False
-IR_ARCO_OPUESTO = False
-IR_A_TAPAR = False
-RETROCEDER = False
-MODO_STOP = False
-LINEA_RECTA = False
-PEGAR_PELOTA = False
-
 
 ir_centro = True
 ir_pelota = False
-ir_arco_nuesto = False
+ir_arco_nuestro = False
 ir_arco_opuesto = False
 ir_a_tapar = False
 retroceder = False
 modo_stop = False
 linea_recta = False
 pegar_pelota = False
+disparar = False
+disparo = False
 
-
-# MODOS 
-MODO_ESPERA = True
-MODO_ACCION = False 
-MODO_ACTUAL = "IR AL CENTRO"
+# MODOS
+modo_espera = True
+modo_accion = False
+modo_actual = "IR AL CENTRO"
 
 ##################################################
 #                    Programa                    #
@@ -345,54 +336,66 @@ while(True):
     pos_interceptar = np.array([int(pos_interceptar[0]), int(pos_interceptar[1])])
 
     #Calcula posicion para pegar
-    pos_inicio_tiro = v_c_3 + 65*(v_c_3 - pos_arco_2)/np.linalg.norm((v_c_3 - pos_arco_2))
+    pos_inicio_tiro = v_c_3 + 70*(v_c_3 - pos_arco_2)/np.linalg.norm((v_c_3 - pos_arco_2))
     pos_inicio_tiro = np.array([int(pos_inicio_tiro[0]), int(pos_inicio_tiro[1])])
 
     
     # Calcula angulo y vector entre B y C
-    if IR_PELOTA:
+    if ir_pelota:
         alpha, d = angulo(v_c_2, v_c_3, v_c_1)
         if MODO_ANTERIOR == "PEGARLE A LA PELOTA":
-            if abs(alpha) <= 15 and np.linalg.norm(d/4.3) < 15:
-                PEGAR_PELOTA = False
-                IR_PELOTA = False
+            if abs(alpha) <= 15 and np.linalg.norm(d/4.5) < 13:
+                pegar_pelota = False
+                ir_pelota = False
                 MODO_ANTERIOR = "IR A LA PELOTA"
-                IR_ARCO_OPUESTO = True
-    elif IR_CENTRO:
+                ir_arco_opuesto = True
+        if MODO_ANTERIOR == "DISPARAR LA PELOTA":
+            if abs(alpha) <= 15 and np.linalg.norm(d/4.5) < 13:
+                pegar_pelota = False
+                disparo = True
+                MODO_ANTERIOR = "IR A LA PELOTA"
+    elif ir_centro:
         alpha, d = angulo(v_c_2, pos_centro, v_c_1)
-    elif IR_ARCO_NUESTRO:
+    elif ir_arco_nuestro:
         alpha, d = angulo(v_c_2, pos_arco_1, v_c_1)
-    elif IR_ARCO_OPUESTO:
+    elif ir_arco_opuesto:
         alpha, d = angulo(v_c_2, pos_arco_2, v_c_1)
-    elif IR_A_TAPAR:
+    elif ir_a_tapar:
         alpha, d = angulo(v_c_2, pos_interceptar, v_c_1)
         cv2.circle(solo_color, pos_interceptar, 8, COLOR_CENTRO, -1)
-    elif PEGAR_PELOTA:
+    elif pegar_pelota:
         alpha, d = angulo(v_c_2, pos_inicio_tiro, v_c_1)
         cv2.circle(solo_color, pos_inicio_tiro, 10, (255, 255, 0), -1)
-        if np.linalg.norm(d/4.3) < 15:
-            PEGAR_PELOTA = False
-            IR_PELOTA = True
+        if np.linalg.norm(d/3) <= 10:
+            pegar_pelota = False
+            ir_pelota = True
             MODO_ANTERIOR = "PEGARLE A LA PELOTA"
+    elif disparar:
+        alpha, d = angulo(v_c_2, pos_inicio_tiro, v_c_1)
+        cv2.circle(solo_color, pos_inicio_tiro, 10, (255, 255, 0), -1)
+        if np.linalg.norm(d/3) <= 10:
+            pegar_pelota = False
+            ir_pelota = True
+            MODO_ANTERIOR = "DISPARAR LA PELOTA"
    
     ## Dibuja linea entre centros
 
     
-    if IR_PELOTA:
+    if ir_pelota:
         solo_color = cv2.line(solo_color, c_color_1, c_color_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
         solo_color = cv2.line(solo_color, c_color_1, c_color_3, COLOR_LINEA_C1_C3, GROSOR_LINEA_CENTROS)
-    elif IR_CENTRO:
+    elif ir_centro:
         solo_color = cv2.line(solo_color, c_color_1, c_color_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
-        solo_color = cv2.line(solo_color, c_color_1, pos_centro, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
-    elif IR_ARCO_NUESTRO:
+        solo_color = cv2.line(solo_color, c_color_1, pos_centro, COLOR_LINEA_C1_C3, GROSOR_LINEA_CENTROS)
+    elif ir_arco_nuestro:
         solo_color = cv2.line(solo_color, c_color_1, c_color_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
-        solo_color = cv2.line(solo_color, c_color_1, pos_arco_1, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
-    elif IR_ARCO_OPUESTO:
+        solo_color = cv2.line(solo_color, c_color_1, pos_arco_1, COLOR_LINEA_C1_C3, GROSOR_LINEA_CENTROS)
+    elif ir_arco_opuesto:
         solo_color = cv2.line(solo_color, c_color_1, c_color_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
-        solo_color = cv2.line(solo_color, c_color_1, pos_arco_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
-    elif IR_A_TAPAR:
+        solo_color = cv2.line(solo_color, c_color_1, pos_arco_2, COLOR_LINEA_C1_C3, GROSOR_LINEA_CENTROS)
+    elif ir_a_tapar:
         solo_color = cv2.line(solo_color, c_color_1, c_color_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
-        solo_color = cv2.line(solo_color, c_color_1, pos_interceptar, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)        
+        solo_color = cv2.line(solo_color, c_color_1, pos_interceptar, COLOR_LINEA_C1_C3, GROSOR_LINEA_CENTROS)        
 
     ## Incertar Texto
     solo_color = cv2.putText(
@@ -407,7 +410,7 @@ while(True):
 
     ## Modo funcion 
     solo_color = cv2.putText(
-        solo_color, f"MODO: = {MODO_ACTUAL}", 
+        solo_color, f"MODO: = {modo_actual}", 
         POS_TEXTO_MODO, 
         cv2.FONT_HERSHEY_SIMPLEX, 
         TAMANO_LETRA_MODO, 
@@ -433,126 +436,156 @@ while(True):
     if tecla & 0xFF == 27: #
         break
     elif tecla & 0xFF == ord('c'): #ir al centro
-        IR_CENTRO = True
-        IR_PELOTA = False
-        IR_ARCO_NUESTRO = False
-        IR_ARCO_OPUESTO = False
-        MODO_STOP = False
-        MODO_ACTUAL = "IR AL CENTRO"
-        IR_A_TAPAR = False
-        LINEA_RECTA = False
+        ir_centro = True
+        ir_pelota = False
+        ir_arco_nuestro = False
+        ir_arco_opuesto = False
+        modo_stop = False
+        modo_actual = "IR AL CENTRO"
+        ir_a_tapar = False
+        linea_recta = False
+        disparar = False
         
     elif tecla & 0xFF == ord('p'): #ir a la pelota
-        IR_CENTRO = False
-        IR_PELOTA = True
-        MODO_STOP = False
-        MODO_ACTUAL = "IR A LA PELOTA"
-        IR_A_TAPAR = False
-        LINEA_RECTA = False
+        ir_centro = False
+        ir_pelota = True
+        modo_stop = False
+        modo_actual = "IR A LA PELOTA"
+        ir_a_tapar = False
+        linea_recta = False
+        disparar = False
 
     elif tecla & 0xFF == ord('a'): #ir al arco opuesto
-        IR_CENTRO = False
-        IR_PELOTA = False
-        IR_ARCO_NUESTRO = False
-        IR_ARCO_OPUESTO = True
-        MODO_STOP = False
-        MODO_ACTUAL = "IR A LA ARCO OPUESTO"
-        IR_A_TAPAR = False
-        LINEA_RECTA = False
+        ir_centro = False
+        ir_pelota = False
+        ir_arco_nuestro = False
+        ir_arco_opuesto = True
+        modo_stop = False
+        modo_actual = "IR A LA ARCO OPUESTO"
+        ir_a_tapar = False
+        linea_recta = False
+        disparar = False
 
     elif tecla & 0xFF == ord('d'): #ir a nuestro arco
-        IR_CENTRO = False
-        IR_PELOTA = False
-        IR_ARCO_NUESTRO = True
-        IR_ARCO_OPUESTO = False
-        MODO_STOP = False
-        MODO_ACTUAL = "IR A NUESTRO ARCO"
-        IR_A_TAPAR = False
-        LINEA_RECTA = False
+        ir_centro = False
+        ir_pelota = False
+        ir_arco_nuestro = True
+        ir_arco_opuesto = False
+        modo_stop = False
+        modo_actual = "IR A NUESTRO ARCO"
+        ir_a_tapar = False
+        linea_recta = False
+        disparar = False
     
-    elif tecla & 0xFF == ord('r'): #Retroceder
-        RETROCEDER = True
-        MODO_ANTERIOR = MODO_ACTUAL
-        MODO_STOP = False
-        MODO_ACTUAL = "RETROCEDER"
-        LINEA_RECTA = False
+    elif tecla & 0xFF == ord('r'): #retroceder
+        retroceder = True
+        MODO_ANTERIOR = modo_actual
+        modo_stop = False
+        modo_actual = "RETROCEDER"
+        linea_recta = False
+        disparar = False
 
     elif tecla & 0xFF == ord('b'): #borrar colores
         nClick = 1
         nClick_2 = 1
 
     elif tecla & 0xFF == ord('s'): # Stop 
-        MODO_STOP = True
-        MODO_ESPERA = True
-        IR_CENTRO = False
-        IR_PELOTA = False
-        IR_ARCO_NUESTRO = False
-        IR_ARCO_OPUESTO = False
-        MODO_ANTERIOR = MODO_ACTUAL
-        MODO_ACTUAL = "STOP"
-        IR_A_TAPAR = False
-        LINEA_RECTA = False
+        modo_stop = True
+        modo_espera = True
+        ir_centro = False
+        ir_pelota = False
+        ir_arco_nuestro = False
+        ir_arco_opuesto = False
+        MODO_ANTERIOR = modo_actual
+        modo_actual = "STOP"
+        ir_a_tapar = False
+        linea_recta = False
+        disparar = False
 
     elif tecla & 0xFF == ord('t'): #tapar el arco
-        IR_CENTRO = False
-        IR_PELOTA = False
-        IR_ARCO_NUESTRO = False
-        IR_ARCO_OPUESTO = False
-        MODO_STOP = False
-        IR_A_TAPAR = True
-        LINEA_RECTA = False
-        MODO_ACTUAL = "IR A TAPAR ARCO"
+        ir_centro = False
+        ir_pelota = False
+        ir_arco_nuestro = False
+        ir_arco_opuesto = False
+        modo_stop = False
+        ir_a_tapar = True
+        linea_recta = False
+        modo_actual = "IR A TAPAR ARCO"
+        disparar = False
 
     elif tecla & 0xFF == ord('w'):
 
-        IR_CENTRO = False
-        IR_PELOTA = False
-        IR_ARCO_NUESTRO = False
-        IR_ARCO_OPUESTO = False
-        MODO_STOP = False
-        IR_A_TAPAR = False
-        LINEA_RECTA = True
-        MODO_ACTUAL = "LINEA RECTA"
+        ir_centro = False
+        ir_pelota = False
+        ir_arco_nuestro = False
+        ir_arco_opuesto = False
+        modo_stop = False
+        ir_a_tapar = False
+        linea_recta = True
+        modo_actual = "LINEA RECTA"
+        disparar = False
     
     elif tecla & 0xFF == ord('q'): #Posicionas, y pegar a la pelota 
 
-        IR_CENTRO = False
-        IR_PELOTA = False
-        IR_ARCO_NUESTRO = False
-        IR_ARCO_OPUESTO = False
-        MODO_STOP = False
-        IR_A_TAPAR = False
-        LINEA_RECTA = False
-        PEGAR_PELOTA = True
-        MODO_ACTUAL = "PEGARLE A LA PELOTA"
-   
-   
+        ir_centro = False
+        ir_pelota = False
+        ir_arco_nuestro = False
+        ir_arco_opuesto = False
+        modo_stop = False
+        ir_a_tapar = False
+        linea_recta = False
+        pegar_pelota = True
+        disparar = False
+        modo_actual = "PEGARLE A LA PELOTA"
+
+    elif tecla & 0xFF == ord('e'): #Posicionas, y dispara la pelota 
+
+        ir_centro = False
+        ir_pelota = False
+        ir_arco_nuestro = False
+        ir_arco_opuesto = False
+        modo_stop = False
+        ir_a_tapar = False
+        linea_recta = False
+        pegar_pelota = False
+        disparar = True
+        modo_actual = "DISPARAR LA PELOTA"
 
     # Mandar informacion arduino
 
     if Listo and CONECTAR:
-        if MODO_ACCION:
-                if RETROCEDER:
+        if modo_accion:
+                if retroceder:
                     com_serial.distancia = -40
                     com_serial.angulo = 0
                     time.sleep(2)
-                    RETROCEDER = False
-                    MODO_ACTUAL = MODO_ANTERIOR
+                    retroceder = False
+                    modo_actual = MODO_ANTERIOR
+                
+                elif disparo:
+                    com_serial.distancia = 200
+                    com_serial.angulo = 0
+                    time.sleep(0.8)
+                    com_serial.distancia = 0
+                    time.sleep(0.25)                
+                    disparar = False
+                    disparo = False
+                    ir_centro = True 
                     
-                elif MODO_STOP:
+                elif modo_stop:
 
                     com_serial.distancia = 0
                     com_serial.angulo = 0
-                    RETROCEDER = False
-                    MODO_ACTUAL = "STOP"
+                    retroceder = False
+                    modo_actual = "STOP"
                     
-                elif LINEA_RECTA:
+                elif linea_recta:
                     com_serial.distancia = 70 
                     com_serial.angulo = 0
 
                 else:
-                    if np.linalg.norm(d/4.3) >= 15 or MODO_ACTUAL != 'IR A LA PELOTA':
-                        com_serial.distancia = int(np.linalg.norm(d/4.3))
+                    if np.linalg.norm(d/3) >= 15 or modo_actual != 'IR A LA PELOTA':
+                        com_serial.distancia = int(np.linalg.norm(d/1.5))
                     else:
                         com_serial.distancia = 0
                     try:
@@ -560,18 +593,18 @@ while(True):
                     except:
                         pass
 
-        elif MODO_ESPERA:
+        elif modo_espera:
 
-            if IR_CENTRO:
-                MODO_ACCION = True
-            elif IR_PELOTA:
-                MODO_ACCION = True
-            elif IR_ARCO_NUESTRO:
-                MODO_ACCION = True
-            elif IR_ARCO_OPUESTO:
-                MODO_ACCION = True
-            elif PEGAR_PELOTA:
-                MODO_ACCION = True
+            if ir_centro:
+                modo_accion = True
+            elif ir_pelota:
+                modo_accion = True
+            elif ir_arco_nuestro:
+                modo_accion = True
+            elif ir_arco_opuesto:
+                modo_accion = True
+            elif pegar_pelota:
+                modo_accion = True
 
     
 

@@ -176,7 +176,7 @@ RANGO_THRESHOLD_1 = 50
 RANGO_THRESHOLD_2 = 255
 RANGO_THRESHOLD_3 = 0
 
-RANGOS_COLOR = np.array([10, 40, 40])
+RANGOS_COLOR = np.array([10, 40, 30])
 
 # Activar
 CONECTAR = True # activar coneccion arduino
@@ -194,6 +194,7 @@ restart = True
 pos_arco_1 = np.array([0,0])
 pos_arco_2 = np.array([0,0])
 pos_centro = np.array([0,0])
+pos_interceptar = np.array([0,0])
 
 ## Vectores creados para el mouse_event() ##
 color1_hsv = np.array([0,0,0])
@@ -213,8 +214,11 @@ IR_CENTRO = True
 IR_PELOTA = False
 IR_ARCO_NUESTRO = False
 IR_ARCO_OPUESTO = False
+IR_A_TAPAR = False
 RETROCEDER = False
 MODO_STOP = False
+LINEA_RECTA = False
+
 
 # MODOS 
 MODO_ESPERA = True
@@ -251,6 +255,7 @@ while(True):
     ancho = int(frame.shape[1])/2 
     altura = int(frame.shape[0])/2
     pos_centro = np.array([int(ancho), int(altura)])
+    
     # Pasar a de HSV
     imagen_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV )
 
@@ -288,7 +293,7 @@ while(True):
     c_color_3 = centro_color(Solo_color_3)
     c_color_2 = centro_color(Solo_color_2)
     c_color_1 = centro_color(Solo_color_1)
-
+    
     #dibuja centro de cancha y arcos
     cv2.circle(solo_color, pos_centro, 8, COLOR_CENTRO, -1)
     cv2.circle(solo_color, pos_arco_1, 8, COLOR_CENTRO, -1)
@@ -299,6 +304,10 @@ while(True):
     v_c_2 = np.array(c_color_2)
     v_c_1 = np.array(c_color_1)
 
+    #Calcula posicion para interceptar
+    pos_interceptar = v_c_3/2 + pos_arco_1/2
+    pos_interceptar = np.array([int(pos_interceptar[0]), int(pos_interceptar[1])])
+
     # Calcula angulo y vector entre B y C
     if IR_PELOTA:
         alpha, d = angulo(v_c_2, v_c_3, v_c_1)
@@ -308,6 +317,9 @@ while(True):
         alpha, d = angulo(v_c_2, pos_arco_1, v_c_1)
     elif IR_ARCO_OPUESTO:
         alpha, d = angulo(v_c_2, pos_arco_2, v_c_1)
+    elif IR_A_TAPAR:
+        alpha, d = angulo(v_c_2, pos_interceptar, v_c_1)
+        cv2.circle(solo_color, pos_interceptar, 8, COLOR_CENTRO, -1)
 
    
     ## Dibuja linea entre centros
@@ -325,6 +337,9 @@ while(True):
     elif IR_ARCO_OPUESTO:
         solo_color = cv2.line(solo_color, c_color_1, c_color_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
         solo_color = cv2.line(solo_color, c_color_1, pos_arco_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
+    elif IR_A_TAPAR:
+        solo_color = cv2.line(solo_color, c_color_1, c_color_2, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)
+        solo_color = cv2.line(solo_color, c_color_1, pos_interceptar, COLOR_LINEA_C1_C2, GROSOR_LINEA_CENTROS)        
 
     ## Incertar Texto
     solo_color = cv2.putText(
@@ -371,12 +386,17 @@ while(True):
         IR_ARCO_OPUESTO = False
         MODO_STOP = False
         MODO_ACTUAL = "IR AL CENTRO"
+        IR_A_TAPAR = False
+        LINEA_RECTA = False
         
     elif tecla & 0xFF == ord('p'): #ir a la pelota
         IR_CENTRO = False
         IR_PELOTA = True
         MODO_STOP = False
         MODO_ACTUAL = "IR A LA PELOTA"
+        IR_A_TAPAR = False
+        LINEA_RECTA = False
+
     elif tecla & 0xFF == ord('a'): #ir al arco opuesto
         IR_CENTRO = False
         IR_PELOTA = False
@@ -384,6 +404,8 @@ while(True):
         IR_ARCO_OPUESTO = True
         MODO_STOP = False
         MODO_ACTUAL = "IR A LA ARCO OPUESTO"
+        IR_A_TAPAR = False
+        LINEA_RECTA = False
 
     elif tecla & 0xFF == ord('d'): #ir a nuestro arco
         IR_CENTRO = False
@@ -392,12 +414,15 @@ while(True):
         IR_ARCO_OPUESTO = False
         MODO_STOP = False
         MODO_ACTUAL = "IR A NUESTRO ARCO"
+        IR_A_TAPAR = False
+        LINEA_RECTA = False
     
     elif tecla & 0xFF == ord('r'): #Retroceder
         RETROCEDER = True
         MODO_ANTERIOR = MODO_ACTUAL
         MODO_STOP = False
         MODO_ACTUAL = "RETROCEDER"
+        LINEA_RECTA = False
 
     elif tecla & 0xFF == ord('b'): #borrar colores
         nClick = 1
@@ -412,6 +437,30 @@ while(True):
         IR_ARCO_OPUESTO = False
         MODO_ANTERIOR = MODO_ACTUAL
         MODO_ACTUAL = "STOP"
+        IR_A_TAPAR = False
+        LINEA_RECTA = False
+
+    elif tecla & 0xFF == ord('t'):
+        IR_CENTRO = False
+        IR_PELOTA = False
+        IR_ARCO_NUESTRO = False
+        IR_ARCO_OPUESTO = False
+        MODO_STOP = False
+        IR_A_TAPAR = True
+        LINEA_RECTA = False
+        MODO_ACTUAL = "IR A TAPAR ARCO"
+
+    elif tecla & 0xFF == ord('w'):
+
+        IR_CENTRO = False
+        IR_PELOTA = False
+        IR_ARCO_NUESTRO = False
+        IR_ARCO_OPUESTO = False
+        MODO_STOP = False
+        IR_A_TAPAR = False
+        LINEA_RECTA = True
+        MODO_ACTUAL = "LINEA RECTA"
+   
 
     # Mandar informacion arduino
 
@@ -430,8 +479,13 @@ while(True):
                     com_serial.angulo = 0
                     RETROCEDER = False
                     MODO_ACTUAL = "STOP"
+                    
+                elif LINEA_RECTA:
+                    com_serial.distancia = 70 
+                    com_serial.angulo = 0
+
                 else:
-                    if np.linalg.norm(d) > 8:
+                    if np.linalg.norm(d/4.3) >= 15 or MODO_ACTUAL != 'IR A LA PELOTA':
                         com_serial.distancia = int(np.linalg.norm(d/4.3))
                     else:
                         com_serial.distancia = 0

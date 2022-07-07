@@ -149,15 +149,24 @@ void loop() {
     Serial.println(msg);
     angulo = msg.substring(separador + 1, largo).toInt();
      multiplicador = angulo/90;
-    if (dist > 50 or abs(angulo) < 120){
+    if (abs(dist) > 10 and abs(angulo) < 100){
     potencia_1 = (1 + multiplicador)* dist;
     potencia_2 = (1 - multiplicador)* dist;
     }
-    else {
-      potencia_1 = abs(angulo)*0.2;
-      potencia_2 = -abs(angulo)*0.2;
-      }//
+    else if (dist == 0 and angulo == 0){
+      potencia_1 = 0;
+      potencia_2 = 0;
+    }
+    else if ( dist <= 10  and  (15 <= abs(angulo) <= 100) ){
+      potencia_1 = angulo*0.7;
+      potencia_2 = -angulo*0.7;
+      }
+    else if(abs(angulo) >= 100) {
+      potencia_1 = angulo*0.2;
+      potencia_2 = -angulo*0.2;
+      }
     newMsg = false;
+    
   }
 
 
